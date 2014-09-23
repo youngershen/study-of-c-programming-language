@@ -1,0 +1,9 @@
+*.*~
+test*
+*.o
+*.s
+*.i
+*.~
+test
+test/
+*.out
