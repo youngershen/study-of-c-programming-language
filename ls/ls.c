@@ -44,3 +44,76 @@ char ** parse_cmds(int argc, char ** argv)
     printf("wrong commands ");
     exit(0);
 }
+
+static DIRLISTINFO * 
+list_directory(char ** params)
+{
+    char ** dirs_list = (char**)malloc(sizeof(char *) * 255);
+    DIRLISTINFO * info = NULL;
+
+    if(NULL == *(params + 0))
+    {   
+        char * dir = *(params + 1);
+        DIR  * dir_pointer = NULL;
+        struct dirent * dirs = NULL;
+        if(NULL != dir)
+        {
+            if(NULL != (dir_pointer = opendir(dir)))
+            {
+                int i = 0;
+                while(NULL != (dirs = readdir(dir_pointer)))
+                {   
+                    *(dirs_list + i ) = dirs->d_name;
+                    i+= 1;
+                }
+                info = (DIRLISTINFO *)malloc(sizeof(DIRLISTINFO));
+                info->size = i   ;
+                info->list = dirs_list;
+                return info;
+            }
+            else
+            {
+                printf("directory is incorrect");
+            }
+        }
+    }
+    return NULL;
+}
+
+
+static DIRLISTINFO *
+reorder_string_list(DIRLISTINFO * info)
+{
+    SIZE size     = info->size;
+    DIRLIST list  = info->list;
+    for(int i = 0 ; i < size ; i++)
+    {
+        char * o_item = *(list + i);
+        for(int n = 0 ; n < size - i ; n++)
+        {   
+            char * i_item = *(list + n);
+            printf("%c : %c\n", *(list + i)[0], *(list + n)[0]);
+            if(*(list + i)[0] > *(list + n)[0])
+            {
+                char * temp = *(list + i);
+                *(list + i) = *(list + n);
+                *(list + n) = temp;
+            }
+        }
+    }
+    return info;
+}
+
+
+
+void
+ls_handler(int argc, char **argv)
+{
+    char ** cmds = parse_cmds(argc, argv);
+    DIRLISTINFO *  info = list_directory(cmds);
+    info = reorder_string_list(info);
+    for(int i = 0 ;i < info->size; i++)
+    {
+        printf("%s\n", *(info->list + i));
+    }
+}

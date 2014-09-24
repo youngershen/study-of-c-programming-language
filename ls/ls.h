@@ -4,8 +4,18 @@
 #include <dirent.h>
 #include <string.h>
 #include <stdbool.h>
+
+#define SIZE int
+#define DIRLIST char **
+
 #define CMD_LENGTH  10
+#define DIR_COUNT 255
 
-char ** parse_cmds(int argc, char ** argv);
+typedef struct DIRLISTINFO{
+    
+    SIZE size;
+    DIRLIST list; 
 
-void ls_directory(char * dir, char * cmds);
+} DIRLISTINFO;
+
+void ls_handler(int argc, char ** argv);
