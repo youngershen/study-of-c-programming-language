@@ -6,9 +6,10 @@ char ** parse_cmds(int argc, char ** argv)
 
     if(2 == argc)
     {
+        printf("%d\n", '-' == *(argv[1]));
+
         if('-' == *(argv[1]))
         {   
-            printf("2 prms");
             char * cmd = argv[1];
             char * dir = ".";
             *(ret + 0) = cmd;
@@ -40,9 +41,15 @@ char ** parse_cmds(int argc, char ** argv)
             exit(0);
         }
     }
+    else
+    {
+        char * cmd = NULL;
+        char * dir = ".";
+        *(ret + 0) = cmd;
+        *(ret + 1) = dir;
+        return ret;
+    }
 
-    printf("wrong commands ");
-    exit(0);
 }
 
 static DIRLISTINFO * 
@@ -77,43 +84,95 @@ list_directory(char ** params)
             }
         }
     }
+    else
+    {
+        exit(0);
+    }
     return NULL;
 }
 
+static void test_sort(void)
+{
+    int a[10] = {1,2,1,2,3,42345,235,234,23,234};
+    for(int i = 0 ; i < 10 ;i ++)
+    {
+        for(int n = 0 ; n < 10 - i; n++)
+        {
+            if(a[n + 1] > a[n])
+            {
+                a[n + 1] = a[n + 1] + a[n];
+                a[n] = a[n + 1] - a[n];
+                a[n + 1] = a[n + 1] - a[n];
+            }
+        }
+    }
+    for(int m = 0 ; m < 10; m++)
+    {
+        printf("%d\n", a[m]);
+    }
+}
 
 static DIRLISTINFO *
 reorder_string_list(DIRLISTINFO * info)
 {
     SIZE size     = info->size;
     DIRLIST list  = info->list;
+
     for(int i = 0 ; i < size ; i++)
     {
-        char * o_item = *(list + i);
-        for(int n = 0 ; n < size - i ; n++)
-        {   
-            char * i_item = *(list + n);
-            printf("%c : %c\n", *(list + i)[0], *(list + n)[0]);
-            if(*(list + i)[0] > *(list + n)[0])
-            {
-                char * temp = *(list + i);
-                *(list + i) = *(list + n);
-                *(list + n) = temp;
+        for(int n = 0 ; n > size - i ; n++)
+        {  
+            if(n < size - i - 1){
+                if(*(list + n + 1)[0] >  *(list + n)[0])
+                {
+                    char * temp = *(list + n + 1);
+                    *(list + n + 1) = *(list + n);
+                    *(list + n) = temp;
+                }
             }
         }
     }
     return info;
 }
 
-
+static 
+bool get_file_stat(DIRLISTINFO * info)
+{
+    DIRLIST  list = info->list;
+    SIZE size      = info->size;
+    FILESTATS stats = (FILESTATS)malloc(sizeof(FILESTAT *) * size);    
+    
+    for(int i = 0 ; i < size ; i++)
+    {
+        char * path = *(info->list + i); 
+        FILESTAT * astat = (FILESTAT * )malloc(sizeof(FILESTAT));
+        int ret = stat(path, astat);
+        if( 0 != ret )
+        {
+            printf("get file stat failed");
+            return -1;
+        }
+        else
+        {
+            *(stats + i) = astat;
+        }
+    }
+    info->file_stats = stats;
+    return 0;
+}
 
 void
 ls_handler(int argc, char **argv)
 {
     char ** cmds = parse_cmds(argc, argv);
     DIRLISTINFO *  info = list_directory(cmds);
-    info = reorder_string_list(info);
+    //info = reorder_string_list(info);
+    get_file_stat(info);
     for(int i = 0 ;i < info->size; i++)
     {
         printf("%s\n", *(info->list + i));
+        FILESTAT * stat = *(info->file_stats + i);
+        printf("%ld\n", stat->st_ctime);
     }
+
 }
