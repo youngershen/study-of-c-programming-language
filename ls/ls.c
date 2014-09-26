@@ -52,6 +52,8 @@ char ** parse_cmds(int argc, char ** argv)
 
 }
 
+
+
 static DIRLISTINFO * 
 list_directory(char ** params)
 {
@@ -91,26 +93,77 @@ list_directory(char ** params)
     return NULL;
 }
 
-static void test_sort(void)
+static DIRLISTINFO *
+sort_dir_by_length(DIRLISTINFO * info)
 {
-    int a[10] = {1,2,1,2,3,42345,235,234,23,234};
-    for(int i = 0 ; i < 10 ;i ++)
+    SIZE size = info->size;
+    DIRLIST list = info->list;
+    
+    char * ** p_dirlist = (char * **)malloc(sizeof(DIRLIST) * size);
+
+    char  flag = *(list + 0)[0];
+    int count = 0;
+    int p_dir_count = 0;
+    char ** dir_buffer = (char **)malloc(sizeof(char *) * size);
+    
+    int sort_dir_count[size][size];
+    for(int i = 0 ; i < size; i ++)
     {
-        for(int n = 0 ; n < 10 - i; n++)
+
+        if(flag ==*(list + i)[0])
         {
-            if(a[n + 1] > a[n])
+           *(dir_buffer + count) = *(list + i);
+           count ++;
+        }
+        else
+        {   sort_dir_count[p_dir_count][0] = count; 
+            *(p_dirlist + p_dir_count) = dir_buffer;
+            count = 0 ;
+            p_dir_count += 1;
+            flag = *(list + i)[0];
+            dir_buffer = (char **)malloc(sizeof(char *) *size);
+            *(dir_buffer + count) = *(list + i);
+            count ++ ;
+        }
+    }
+
+    for(int n = 0 ; n < p_dir_count + 1 ; n ++)
+    {
+        for(int m = 0 ; m < sort_dir_count[n][0] ; m ++)
+        {
+            for(int k = 0 ; k < sort_dir_count[n][0] - m ; k++)
             {
-                a[n + 1] = a[n + 1] + a[n];
-                a[n] = a[n + 1] - a[n];
-                a[n + 1] = a[n + 1] - a[n];
+                int dir_len      = strlen( *(*(p_dirlist + n) + k) );
+                int next_dir_len = strlen( *(*(p_dirlist + n) + k + 1));
+                if(dir_len > next_dir_len)
+                {
+                    char * temp;
+                    temp = *(*(p_dirlist + n) + k);
+                    *(*(p_dirlist + n) + k) = *(*(p_dirlist + n) + k + 1);
+                    *(*(p_dirlist + n) + k + 1) = temp;
+                }
             }
         }
     }
-    for(int m = 0 ; m < 10; m++)
+    
+    DIRLIST new_list = (DIRLIST)malloc(sizeof(char *) * size);
+    for(int i = 0 ; i < p_dir_count; i ++)
     {
-        printf("%d\n", a[m]);
+        for(int n = 0; n < sort_dir_count[i][0]; n++)
+        {
+            int off_set = 0;
+            for(int m = 0 ; m < i ; m ++)
+            {
+                off_set += sort_dir_count[i + m][0];
+                off_set += n;
+            }
+            *(new_list + off_set) = *(*(p_dirlist + i) + n);
+        }
     }
+    info->list = new_list;
+    return info;
 }
+
 
 static DIRLISTINFO *
 reorder_string_list(DIRLISTINFO * info)
@@ -120,8 +173,8 @@ reorder_string_list(DIRLISTINFO * info)
 
     for(int i = 0 ; i < size ; i++)
     {
-        for(int n = 0 ; n > size - i ; n++)
-        {  
+        for(int n = 0 ; n < size - i ; n++)
+        { 
             if(n < size - i - 1){
                 if(*(list + n + 1)[0] >  *(list + n)[0])
                 {
@@ -132,6 +185,8 @@ reorder_string_list(DIRLISTINFO * info)
             }
         }
     }
+
+    //info =  sort_dir_by_length(info);
     return info;
 }
 
@@ -166,13 +221,13 @@ ls_handler(int argc, char **argv)
 {
     char ** cmds = parse_cmds(argc, argv);
     DIRLISTINFO *  info = list_directory(cmds);
-    //info = reorder_string_list(info);
+    info = reorder_string_list(info);
     get_file_stat(info);
     for(int i = 0 ;i < info->size; i++)
     {
         printf("%s\n", *(info->list + i));
         FILESTAT * stat = *(info->file_stats + i);
-        printf("%ld\n", stat->st_ctime);
+        //printf("%ld\n", stat->st_ctime);
     }
 
 }
